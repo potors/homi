@@ -3,12 +3,15 @@ import re
 EOF = "$"
 
 class Token:
-    def __init__(self, typ: str, val: str):
+    def __init__(self, typ: str, val: str, pos: int | None = None):
         self.type = typ
         self.value = val
+        self.pos = pos
+        self.ln = 0
+        self.col = 0
 
     def __str__(self):
-        return f"Token({self.type!r}, {self.value!r})"
+        return f"Token{ f"[{self.ln}:{self.col}]" if self.pos is not None else "" }({ self.type!r }, { self.value!r })"
 
     def __repr__(self):
         return self.type
@@ -18,42 +21,53 @@ class Lexer:
         self.terminals = sorted(terminals, key=len, reverse=True)
 
     def token(self, text: str) -> Token | None:
-        symbol = text.split(' ')[0]
+        match = lambda x: (re.search(x, text) or [None])[0]
 
-        if re.match(r'".*"', symbol):
+        if symbol := match(r'^".*"'):
             return Token("Str", symbol)
 
-        if re.match(r'0(x|o|b)\d+', symbol):
+        if symbol := match(r'^0(x|o|b)\d+'):
             return Token("Num", symbol)
 
-        if re.match(r'\d+\.\d+', symbol):
+        if symbol := match(r'^\d+\.\d+'):
             return Token("Num", symbol)
 
-        if re.match(r'\d+', symbol):
+        if symbol := match(r'^\d+'):
             return Token("Num", symbol)
 
-        if re.match(r'[a-zA-Z0-9-_\.]+', symbol):
+        if symbol := match(r'^[a-zA-Z0-9-_\.]+'):
             if symbol in self.terminals:
                 return Token(symbol, symbol)
 
             return Token("Id", symbol)
 
         for term in self.terminals:
-            if symbol.startswith(term):
+            if text[:len(term)] == term:
                 return Token(term, term)
 
 
     def tokenize(self, text: str) -> list[Token]:
-        tokens = []
+        tokens: list[Token] = []
 
-        text = text.replace('\n', ' ')
-        text = text.replace('\t', ' ')
-
+        pos = 0
+        line = 0
+        col = 0
         while len(text) > 0:
-            text = text.strip()
+            if text[0] == '\n':
+                line += 1
+                col = 0
 
-            if text.startswith('/*'):
-                text = text[text.find('*/') + 2:]
+            if text[0].isspace():
+                text = text[1:]
+                pos += 1
+                col += 1
+                continue
+
+            if text.startswith('#'):
+                end = text.find('\n') + 2
+                text = text[end:]
+                pos += end
+                col += end
                 continue
 
             token = self.token(text)
@@ -61,13 +75,21 @@ class Lexer:
                 # skip invalid char (wtf?)
                 if len(text) > 0:
                     text = text[1:]
+                    pos += 1
+                    col += 1
                     continue
 
                 break
+
+            pos += len(token.value)
+            col += len(token.value)
+
+            token.pos = pos
+            token.ln = line
+            token.col = col
 
             tokens.append(token)
             text = text[len(token.value):]
 
         tokens.append(Token(EOF, EOF))
         return tokens
-
