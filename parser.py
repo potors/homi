@@ -1,6 +1,6 @@
 from collections import defaultdict
 from lexer import Token, EOF
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 def rules(text: str) -> list[tuple[str, list[str]]]:
     rules = []
@@ -137,7 +137,7 @@ class LRItem:
 
 @dataclass
 class ParseError:
-    token: Token        # real token that was wrong
+    token: Token
     message: str
 
 class SLRParser:
@@ -246,13 +246,13 @@ class SLRParser:
         key = (sid, sym)
 
         if key in self.actions and self.actions[key] != action:
-            return
+            existing = self.actions[key]
 
-            # this down would error and abort parsing
-            # but we need to shift on unary, so assume it will
-            # work for now (may not for other grammars)
-            raise ValueError(f"SLR conflict at state {sid}, symbol {sym!r}: "
-                             f"{self.actions[key]} vs {action}. Grammar not SLR(1).")
+            # shift/reduce conflict: always prefer shift
+            if action[0] == "shift" and existing[0] == "reduce":
+                self.actions[key] = action
+
+            return
 
         self.actions[key] = action
 
@@ -285,25 +285,37 @@ class SLRParser:
                     token.type = expected[0]
                     continue
 
-                # irrecuperable error: skip it
-                if len(expected) != 1:
+                # no valid action at all: abort on EOF, otherwise skip token
+                if len(expected) == 0:
+                    if token.type == EOF:
+                        return errors
                     errors.append(ParseError(
                         token=token,
-                        message=f"[Ignore] Got { token!r } instead of { expected!r }"
+                        message=f"[Ignore] Got {token!r} in dead state"
                     ))
-
                     tokens.pop(i)
                     continue
 
-                # token should be here
-                phantom_type = expected[0]
+                # single expected token -> transform current token
+                if len(expected) == 1:
+                    errors.append(ParseError(
+                        token=token,
+                        message=f"[Transform] Let {token!r} be {expected[0]!r}"
+                    ))
+                    token.type = expected[0]
+                    continue
+
+                # multiple expectations: skip token, but never discard EOF
                 errors.append(ParseError(
                     token=token,
-                    message=f"[Sync] Missing { phantom_type!r } before { token!r }"
+                    message=f"[Ignore] Got {token!r} instead of {expected!r}"
                 ))
 
-                action = self.actions[(int(state), phantom_type)]
-                token = Token(phantom_type, None) # pyright: ignore
+                if token.type == EOF:
+                    return errors
+
+                tokens.pop(i)
+                continue
 
             match action[0]:
                 case "shift":

@@ -10,7 +10,7 @@ you could use one that's publically available for inspection
 and/or tinkering, like [this one][slr] instead.
 
 This is because writing the states by hand is pure misery.
-(also it's kinda the lesson's objective)
+Although it should be easier to treat error states.
 
 [slr]: https://jsmachines.sourceforge.net/machines/slr.html
 
@@ -51,6 +51,19 @@ shift operation directly on the parser.
 Those weren't implemented on this language. Each entity may
 accept an arbitrary time scale, and there's nothing we, as
 translators, can do to infer the expected one.
+
+## Augmented Grammar
+
+The grammar may be adapted to use only one production as the
+start. Here it have been included:
+
+```
+FILE -> AUTOMATION_START
+AUTOMATION_START -> AUTOMATIONS
+AUTOMATION_START -> ε
+```
+
+Just to allow an empty file without erroring. I mean... you can.
 
 # Tokens (RegEx)
 
