@@ -1,0 +1,47 @@
+- id: '1779127354079'
+  alias: notif_nfc
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: ''
+  - trigger: webhook
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: true
+    webhook_id: notif-nfc-SZHcR9SiIM2cy--zUv44Rvmz
+  conditions:
+  - condition: sun
+    before: sunrise
+  - condition: numeric_state
+    entity_id: sensor.backup_last_successful_automatic_backup
+    below: 1
+  actions:
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: read nfc tag
+      title: reader is reading :O
+  mode: single
+- id: '1779194796767'
+  alias: ijioj
+  description: ''
+  triggers:
+  - trigger: event
+    event_type: hell yeah
+    event_data: {}
+  conditions:
+  - condition: time
+    after: '20:00:00'
+  actions:
+  - action: ffmpeg.stop
+    metadata: {}
+    data: {}
+  mode: single
+- id: '1779197534529'
+  alias: New automation
+  description: ''
+  triggers: []
+  conditions: []
+  actions: []
+  mode: single

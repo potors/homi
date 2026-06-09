@@ -1,0 +1,30 @@
+automation "notif_nfc" {
+    mode "single"
+
+    when tag { tag_id "" }
+
+    when webhook {
+        allowed_methods [
+            "POST"
+            "PUT"
+        ]
+
+        local_only true
+    }
+
+    if sun {
+        before "sunrise"
+    }
+
+    if numeric_state {
+        entity_id sensor.backup_last_successful_automatic_backup
+        below 1
+    }
+
+    do notify.notify {
+        data {
+            message "read nfc tag"
+            title "reader is reading :O"
+        }
+    }
+}

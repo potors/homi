@@ -6,7 +6,6 @@ from tree import (
     BinOp, UnaryOp, NumLiteral,
 )
 
-
 def _val(node: Any) -> Any:
     match node:
         case BoolValue(value=v):    return v
@@ -23,7 +22,6 @@ def _val(node: Any) -> Any:
 
 def _emit_value(val: Any, indent: int) -> str:
     pad = "  " * indent
-
     if isinstance(val, dict):
         if not val:
             return "{}"
@@ -33,13 +31,15 @@ def _emit_value(val: Any, indent: int) -> str:
             if isinstance(v, list) and v:
                 rendered = _emit_value(v, indent)
                 lines.append(f"{pad}{k}:\n{rendered}")
-            elif isinstance(v, (dict)) and v:
+                continue
+
+            if isinstance(v, (dict)) and v:
                 rendered = _emit_value(v, indent + 1)
                 lines.append(f"{pad}{k}:\n{rendered}")
-            else:
-                rendered = _emit_value(v, indent + 1)
-                lines.append(f"{pad}{k}: {rendered}")
+                continue
 
+            rendered = _emit_value(v, indent + 1)
+            lines.append(f"{pad}{k}: {rendered}")
         return "\n".join(lines)
 
     if isinstance(val, list):
@@ -47,19 +47,19 @@ def _emit_value(val: Any, indent: int) -> str:
             return "[]"
 
         lines = []
-
+        base = "  " * (indent + 1)
         for item in val:
             rendered = _emit_value(item, indent + 1)
 
-            if isinstance(item, dict) and item:
-                # first key on same line as '-'
-                items_lines = rendered.strip().split("\n")
-                lines.append(f"{pad}- {items_lines[0].strip()}")
-
-                for l in items_lines[1:]:
-                    lines.append(f"{pad}  {l.strip()}")
-            else:
+            if not (isinstance(item, dict) and item):
                 lines.append(f"{pad}- {rendered}")
+                continue
+
+            item_lines = rendered.split("\n")
+            lines.append(f"{pad}- {item_lines[0][len(base):]}")
+
+            for l in item_lines[1:]:
+                lines.append(f"{pad}  {l[len(base):]}")
 
         return "\n".join(lines)
 
@@ -85,12 +85,15 @@ def _emit_mapping(d: dict, indent: int) -> str:
             # HA style: list items at same indent as key
             rendered = _emit_value(v, indent)
             lines.append(f"{pad}{k}:\n{rendered}")
-        elif isinstance(v, dict) and v:
+            continue
+
+        if isinstance(v, dict) and v:
             rendered = _emit_value(v, indent + 1)
             lines.append(f"{pad}{k}:\n{rendered}")
-        else:
-            rendered = _emit_value(v, indent + 1)
-            lines.append(f"{pad}{k}: {rendered}")
+            continue
+
+        rendered = _emit_value(v, indent + 1)
+        lines.append(f"{pad}{k}: {rendered}")
 
     return "\n".join(lines)
 
@@ -111,21 +114,13 @@ def _automation_to_yaml(auto: Automation, indent: int = 0) -> str:
                 triggers.append(entry)
 
             case IfRule():
-                # IfRule wraps a condition node; extract Id + Dict from NegatedCondition->CallNegation
-                from tree import CallNegation, NotNegation
-                neg = rule.condition
+                from condyaml import condition_to_yaml
+                result = condition_to_yaml(rule.condition)
 
-                # unwrap NegatedCondition
-                if hasattr(neg, 'negation'): neg = neg.negation
-
-                # unwrap NotNegation chain
-                while isinstance(neg, NotNegation):
-                    neg = neg.inner
-
-                if isinstance(neg, CallNegation):
-                    entry = {"condition": neg.name}
-                    entry.update({p.name: _val(p.value) for p in neg.args.props})
-                    conditions.append(entry)
+                if isinstance(result, list):
+                    conditions.extend(result)
+                else:
+                    conditions.append(result)
 
             case DoRule(action=act, args=Dict(props=ps)):
                 entry = {"action": act}
@@ -146,6 +141,7 @@ def _automation_to_yaml(auto: Automation, indent: int = 0) -> str:
 
         for item in items:
             item_lines = _emit_mapping(item, indent + 1).split("\n")
+
             # strip base indent, re-add pad + list marker or continuation
             lines.append(f"{pad}- {item_lines[0][len(base):]}")
 
@@ -160,12 +156,15 @@ def _automation_to_yaml(auto: Automation, indent: int = 0) -> str:
         if isinstance(v, list) and v:
             rendered = _emit_value(v, indent + 1)
             lines.append(f"{pad}{k}:\n{rendered}")
-        elif isinstance(v, dict) and v:
+            continue
+
+        if isinstance(v, dict) and v:
             rendered = _emit_value(v, indent + 2)
             lines.append(f"{pad}{k}:\n{rendered}")
-        else:
-            rendered = _emit_value(v, indent + 1)
-            lines.append(f"{pad}{k}: {rendered}")
+            continue
+
+        rendered = _emit_value(v, indent + 1)
+        lines.append(f"{pad}{k}: {rendered}")
 
     return "\n".join(lines)
 
@@ -175,8 +174,10 @@ def generate(file: AutomationFile) -> str:
 
     for auto in file.automations:
         name = auto.name.strip('"')
+
         header = f"- alias: {name}"
         body = _automation_to_yaml(auto, indent=1)
+
         blocks.append(header + "\n" + body)
 
     return "\n".join(blocks)
@@ -184,8 +185,8 @@ def generate(file: AutomationFile) -> str:
 
 if __name__ == "__main__":
     from tree import parse_source
+    import sys
 
-    src = input('> ')
-    # src = 'automation "ass" {'
+    src = sys.stdin.read()
     tree = parse_source(src)
     print(generate(tree))

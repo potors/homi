@@ -1,0 +1,23 @@
+automation "Suíte - cortinas" {
+    when time {
+        at "22:30:00"
+        id "Abrir blackout"
+    }
+
+    when time {
+        at "12:30:00"
+        id "Abrir cortina"
+    }
+
+    if (device {
+        domain alarm_control_panel
+        type "is_disarmed"
+    }) or (someone {
+        invaded true
+    })
+
+    do emergency {
+        vanish - - 1
+        explode false
+    }
+}

@@ -1,0 +1,16 @@
+automation "valid" {
+  when car {
+    locked true
+  }
+
+  if expression {
+    target random.number
+    equal 2 * 32 + 0xCB
+  }
+
+  do notify {
+    title "Your car"
+
+    message "You have locked your car"
+  }
+}

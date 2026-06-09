@@ -2,59 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 from lexer import Token, EOF
-from parser import Grammar, SLRParser
-
-GRAMMAR = '''
-FILE -> AUTOMATION_START
-AUTOMATION_START -> AUTOMATIONS
-AUTOMATION_START -> ε
-AUTOMATION -> automation Str { }
-AUTOMATION -> automation Str { RULES }
-AUTOMATIONS -> AUTOMATIONS AUTOMATION
-AUTOMATIONS -> AUTOMATION
-RULE -> when Id DICT
-RULE -> if CONDITION
-RULE -> do Id DICT
-RULE -> PROPERTY
-RULES -> RULES RULE
-RULES -> RULE
-CONDITION -> ( CONDITION ) CHAIN
-CONDITION -> NEGATION CHAIN
-CHAIN -> and CONDITION
-CHAIN -> or CONDITION
-CHAIN -> ε
-NEGATION -> not NEGATION
-NEGATION -> Id DICT
-PROPERTY -> Id VALUE
-PROPERTIES -> PROPERTIES PROPERTY
-PROPERTIES -> PROPERTY
-VALUE -> true
-VALUE -> false
-VALUE -> Id
-VALUE -> Str
-VALUE -> LIST
-VALUE -> DICT
-VALUE -> EXPR
-VALUES -> VALUES VALUE
-VALUES -> VALUE
-LIST -> [ ]
-LIST -> [ VALUES ]
-DICT -> { }
-DICT -> { PROPERTIES }
-EXPR -> EXPR + EXPR1
-EXPR -> EXPR - EXPR1
-EXPR -> EXPR1
-EXPR1 -> EXPR1 * EXPR2
-EXPR1 -> EXPR1 / EXPR2
-EXPR1 -> EXPR1 % EXPR2
-EXPR1 -> EXPR2
-EXPR2 -> EXPR3 ** EXPR2
-EXPR2 -> EXPR3
-EXPR3 -> + EXPR3
-EXPR3 -> - EXPR3
-EXPR3 -> ( EXPR )
-EXPR3 -> Num
-'''
+from parser import Grammar, SLRParser, GRAMMAR
 
 @dataclass
 class AutomationFile:
@@ -258,13 +206,13 @@ class ASTParser(SLRParser):
                     return errors
 
     def _sem_action(self, name: str, syms: list[str], ch: list[Any]) -> Any:
-        def tv(n):  # token value
+        def tv(n):
             x = ch[n]
             return x.value if isinstance(x, Token) else x
 
         match name:
-            case "AUTOMATION_START" if not syms:     return []
-            case "AUTOMATION_START":                 return ch[0]
+            case "AUTOMATION'" if not syms:     return []
+            case "AUTOMATION'":                 return ch[0]
 
             case "AUTOMATIONS" if len(syms) == 2:    return ch[0] + [ch[1]]
             case "AUTOMATIONS":                      return [ch[0]]
@@ -278,15 +226,18 @@ class ASTParser(SLRParser):
             case "RULE" if syms == ["when","Id","DICT"]:  return WhenRule(event=tv(1), args=ch[2])
             case "RULE" if syms == ["if","CONDITION"]:    return IfRule(condition=ch[1])
             case "RULE" if syms == ["do","Id","DICT"]:    return DoRule(action=tv(1), args=ch[2])
-            case "RULE":                                   return ch[0]  # PROPERTY passthrough
+            case "RULE":                                  return ch[0]
 
             case "CONDITION" if syms == ["(","CONDITION",")","CHAIN"]:
                 return ParenCondition(inner=ch[1], chain=ch[3])
-            case "CONDITION":  # NEGATION CHAIN
-                chain = ch[1]
+
+            case "CONDITION":
                 base = NegatedCondition(negation=ch[0])
+
+                chain = ch[1]
                 if chain:
                     return ChainedCondition(base=base, op=chain.op, rest=chain.condition)
+
                 return base
 
             case "CHAIN" if not syms:                return None
@@ -303,7 +254,7 @@ class ASTParser(SLRParser):
             case "VALUE" if syms == ["false"]:       return BoolValue(value=False)
             case "VALUE" if syms == ["Id"]:          return IdValue(name=tv(0))
             case "VALUE" if syms == ["Str"]:         return StrValue(raw=tv(0))
-            case "VALUE":                            return ch[0]  # LIST|DICT|EXPR passthrough
+            case "VALUE":                            return ch[0]
 
             case "VALUES" if len(syms) == 2:         return ch[0] + [ch[1]]
             case "VALUES":                           return [ch[0]]
@@ -325,13 +276,12 @@ class ASTParser(SLRParser):
 
             case "EXPR3" if syms in [["+","EXPR3"],["-","EXPR3"]]:
                 return UnaryOp(op=tv(0), operand=ch[1])
+
             case "EXPR3" if syms == ["(","EXPR",")"]:  return ch[1]
             case "EXPR3":                              return NumLiteral(raw=tv(0))
 
             case _:
                 return ch[0] if len(ch) == 1 else ch
-
-# ── Pretty printer ────────────────────────────────────────────────────────────
 
 def pretty(node: Any, depth: int = 0) -> str:
     pad = "  " * depth
@@ -393,7 +343,9 @@ def pretty(node: Any, depth: int = 0) -> str:
 
         case ParenCondition(inner=i, chain=c):
             s = f"{pad}Paren\n{pretty(i,depth+1)}"
-            if c: s += f"\n{pretty(c,depth+1)}"
+            if c:
+                s += f"\n{pretty(c,depth+1)}"
+
             return s
 
         case NotNegation(inner=i):
@@ -411,18 +363,18 @@ def pretty(node: Any, depth: int = 0) -> str:
         case _:
             return f"{pad}{node!r}"
 
-# ── Public API ────────────────────────────────────────────────────────────────
-
 def parse_source(source: str) -> AutomationFile:
     from lexer import Lexer
+
     g = Grammar(GRAMMAR)
     lexer = Lexer(g.terminals)
     tokens = lexer.tokenize(source)
 
     return ASTParser(g).build(tokens)
 
-
 if __name__ == "__main__":
-    src = input("> ")
+    import sys
+
+    src = sys.stdin.read()
     tree = parse_source(src)
     print(pretty(tree))

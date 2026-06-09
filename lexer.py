@@ -26,7 +26,7 @@ class Lexer:
         if symbol := match(r'^".*"'):
             return Token("Str", symbol)
 
-        if symbol := match(r'^0(x|o|b)\d+'):
+        if symbol := match(r'^0[xob][0-9a-fA-F]+'):
             return Token("Num", symbol)
 
         if symbol := match(r'^\d+\.\d+'):
@@ -54,8 +54,10 @@ class Lexer:
         col = 0
         while len(text) > 0:
             if text[0] == '\n':
+                text = text[1:]
                 line += 1
                 col = 0
+                continue
 
             if text[0].isspace():
                 text = text[1:]
@@ -64,8 +66,9 @@ class Lexer:
                 continue
 
             if text.startswith('#'):
-                end = text.find('\n') + 2
+                end = text.find('\n')
                 text = text[end:]
+                line += 1
                 pos += end
                 col += end
                 continue
@@ -81,15 +84,25 @@ class Lexer:
 
                 break
 
-            pos += len(token.value)
-            col += len(token.value)
-
             token.pos = pos
             token.ln = line
             token.col = col
+
+            pos += len(token.value)
+            col += len(token.value)
 
             tokens.append(token)
             text = text[len(token.value):]
 
         tokens.append(Token(EOF, EOF))
         return tokens
+
+if __name__ == "__main__":
+    import sys
+
+    src = sys.stdin.read()
+    lexer = Lexer({ sym for sym in 'automation { } when if do ( ) and or not true false [ ] + - * / % **'.split(' ') })
+    tokens = lexer.tokenize(src)
+
+    for token in tokens:
+        print(token)

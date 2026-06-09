@@ -1,0 +1,53 @@
+automation "Tablet - carregador" {
+    when device {
+        type "battery_level"
+        domain "sensor"
+        trigger "device"
+        id "+ de 75"
+        above 75
+    }
+
+    when device {
+        type "battery_level"
+        domain "sensor"
+        trigger "device"
+        id "- de 20"
+        below 20
+    }
+
+    when device {
+        type "battery_level"
+        domain "sensor"
+        trigger "device"
+        id "- de 10"
+        below 10
+    }
+
+    when device {
+        type "battery_level"
+        domain "sensor"
+        trigger "device"
+        id "- de 5"
+        below 5
+    }
+
+    do choose {
+        choose {
+            conditions [{
+                condition "trigger"
+                id ["+ de 75"]
+            }]
+
+            sequence {
+                type "turn_off"
+                domain "switch"
+
+                data {
+                    message "Tablet descarregando"
+                }
+
+                action notify.mobile_app_zfold4
+            }
+        }
+    }
+}

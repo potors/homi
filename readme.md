@@ -3,6 +3,17 @@
 This is a toy language for converting "readable and natural"
 code into a home assistant's valid automation YAML.
 
+For testing purposes, one may test some input by either entering
+it after running the program (which starts waiting for input,
+without visual confirmation - this is only for debugging
+after all) or piping some input; eg. `echo '...' | python gen.py`
+or `cat exampleN.homi | python gen.py`
+
+There's no external dependencies but the python runtime.
+One "monofile" of a kind is available named `run.py` that
+run and log both the lexer and parser, then generate a
+correspondent YAML file to `stdout`.
+
 # SLR Parser Generator
 
 This application uses a in-house SLR(1) parser generator, but
@@ -12,16 +23,22 @@ and/or tinkering, like [this one][slr] instead.
 This is because writing the states by hand is pure misery.
 Although it should be easier to treat error states.
 
+Even now, I don't know if it was a good decision or no. It's
+very cool and practical to alter the grammar for testing, as
+I've already said, doing it manually is a pain. But it's also
+a pain to treat different panics that may occur, so there's
+visible drawbacks on this approach.
+
 [slr]: https://jsmachines.sourceforge.net/machines/slr.html
 
 # Programming Language of Choice
 
 I first thought in using GO for this project, but it turned out
 to be a mistake. Not because GO is bad or anything, but because
-I don't got the time it would take to finish the project.
-Deadlines are kinda important, and GO simply doesn't have almost
-any "high level" facilities. The project was in the 1k lines mark
-just halfway there, so I migrated the code to python (instant relief).
+I wouldn't have the time to finish the project. Deadlines are
+kinda important, and GO simply doesn't have almost any "high
+level" facilities. The project was in the 1k lines mark just
+halfway there, so I migrated the code to python.
 
 # Implementation Details
 
@@ -58,12 +75,41 @@ The grammar may be adapted to use only one production as the
 start. Here it have been included:
 
 ```
-FILE -> AUTOMATION_START
-AUTOMATION_START -> AUTOMATIONS
-AUTOMATION_START -> ε
+FILE -> AUTOMATION'
+AUTOMATION' -> AUTOMATIONS
+AUTOMATION' -> ε
 ```
 
-Just to allow an empty file without erroring. I mean... you can.
+This three rules together allow the user to have an empty file.
+
+## Problems
+
+- Right before sending, some code broke mathematical expressions
+and it would take too long to fix. This is sad because it was
+working like a charm.
+
+- If there's some entity inside home assistant that uses any
+keyword as `Id`, the keyword will be ignored by the parser, thus
+breaking most of the file.
+
+- Because there's no specific control in which state it should
+sync or fail, file parsing should work most of the time, but
+without an external agent actively taking warnings down the user
+won't notice anything (expected behavior).
+
+- The problem above also reinforces that this application is
+somewhat bad and malformed.
+
+- The grammar is "defined" in two distinct places: first in the
+parser; and later (hardcoded) on yaml generator. This makes the
+parser generator insignificant, to say the least.
+
+- It's really hard to predict the program behavior when working
+with sets, as I've encountered problems regarding hashing order
+in two languages because of bad API design.
+
+- When refactoring the codebase, the original boolean acryonms
+were lost in the way and I remembered of them too late.
 
 # Tokens (RegEx)
 

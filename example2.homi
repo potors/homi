@@ -1,0 +1,63 @@
+automation "Por do Sol" {
+    description "Liga dispositivos em horarios diferentes"
+    mode "single"
+
+    when sun {
+        id chuva
+        event "sunset"
+        offset "-01:30:00"
+    }
+
+    when sun {
+        id nublado
+        event "sunset"
+        offset "-01:15:00"
+    }
+
+    when sun {
+        id sol
+        event "sunset"
+        offset "-00:45:00"
+    }
+
+    if state {
+        state ["disarmed"]
+    }
+
+    do choose {
+        conditions [{
+            condition state
+            state [
+                "rainy"
+                "pouring"
+                "lightning-rainy"
+                "hail"
+                "snowy"
+            ]
+        } {
+            condition state
+            state [
+                "cloudy"
+                "windy-variant"
+                "fog"
+                "partlycloudy"
+                "windy"
+            ]
+        } {
+            condition device
+            type "is_off"
+            domain "switch"
+        }]
+
+        sequence {
+            action automation.trigger
+            target {
+                entity_id automation.cozinha_ligar_luzes
+            }
+
+            data {
+                skip_condition true
+            }
+        }
+    }
+}
