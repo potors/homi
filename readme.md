@@ -1,78 +1,46 @@
 # Homi Language
 
-This is a toy language for converting "readable and natural"
-code into a home assistant's valid automation YAML.
+This is a toy language for converting "readable and natural" code into a home assistant's valid automation YAML.
 
-For testing purposes, one may test some input by either entering
-it after running the program (which starts waiting for input,
-without visual confirmation - this is only for debugging
-after all) or piping some input; eg. `echo '...' | python gen.py`
-or `cat exampleN.homi | python gen.py`
+For testing purposes, one may test some input by either entering it after running the program (which starts waiting for input, without visual confirmation - this is only for debugging after all) or piping some input; eg. `echo '...' | python gen.py` or `cat exampleN.homi | python gen.py`
 
-There's no external dependencies but the python runtime.
-One "monofile" of a kind is available named `run.py` that
-run and log both the lexer and parser, then generate a
-correspondent YAML file to `stdout`.
+There's no external dependencies but the python runtime. One "monofile" of a kind is available named `run.py` that run and log both the lexer and parser, then generate a correspondent YAML file to `stdout`.
 
 # SLR Parser Generator
 
-This application uses a in-house SLR(1) parser generator, but
-you could use one that's publically available for inspection
-and/or tinkering, like [this one][slr] instead.
+This application uses a in-house SLR(1) parser generator, but you could use one that's publically available for inspection and/or tinkering, like [this one][slr] instead.
 
-This is because writing the states by hand is pure misery.
-Although it should be easier to treat error states.
+This is because writing the states by hand is pure misery. Although it should be easier to treat error states.
 
-Even now, I don't know if it was a good decision or no. It's
-very cool and practical to alter the grammar for testing, as
-I've already said, doing it manually is a pain. But it's also
-a pain to treat different panics that may occur, so there's
-visible drawbacks on this approach.
+Even now, I don't know if it was a good decision or no. It's very cool and practical to alter the grammar for testing, as I've already said, doing it manually is a pain. But it's also a pain to treat different panics that may occur, so there's visible drawbacks on this approach.
 
 [slr]: https://jsmachines.sourceforge.net/machines/slr.html
 
 # Programming Language of Choice
 
-I first thought in using GO for this project, but it turned out
-to be a mistake. Not because GO is bad or anything, but because
-I wouldn't have the time to finish the project. Deadlines are
-kinda important, and GO simply doesn't have almost any "high
-level" facilities. The project was in the 1k lines mark just
-halfway there, so I migrated the code to python.
+I first thought in using GO for this project, but it turned out to be a mistake. Not because GO is bad or anything, but because I wouldn't have the time to finish the project. Deadlines are kinda important, and GO simply doesn't have almost any "high level" facilities. The project was in the 1k lines mark just halfway there, so I migrated the code to python.
 
 # Implementation Details
 
 ## Mathematical and Boolean Expressions
 
-This language supports basic mathematical expressions, up to
-powers. In the other hand it does not have boolean ones. This is
-because of the counterpart, one may never do it in YAML, and so
-do here. Note that _nested conditions_ were, actually, supported.
-They are the **and**, **or** and **not** special blocks in conditions.
+This language supports basic mathematical expressions, up to powers. In the other hand it does not have boolean ones. This is because of the counterpart, one may never do it in YAML, and so do here. Note that _nested conditions_ were, actually, supported. They are the **and**, **or** and **not** special blocks in conditions.
 
 ## Empty Blocks
 
-Follows the same logic for boolean expressions. You _can_ make
-a empty automation, but home assistant would reject it.
+Follows the same logic for boolean expressions. You _can_ make a empty automation, but home assistant would reject it.
 
 ## Ambiguity on State 33
 
-This grammar offers two _unary operators_. These clash with
-_add_ and _sub_ operators, so they need an external agent to
-rule whose state will be used on a conflict. Unfortunately,
-this is not trivial and the simplest solution was to keep the
-shift operation directly on the parser.
+This grammar offers two _unary operators_. These clash with _add_ and _sub_ operators, so they need an external agent to rule whose state will be used on a conflict. Unfortunately, this is not trivial and the simplest solution was to keep the shift operation directly on the parser.
 
 ## Time Syntatic Sugars
 
-Those weren't implemented on this language. Each entity may
-accept an arbitrary time scale, and there's nothing we, as
-translators, can do to infer the expected one.
+Those weren't implemented on this language. Each entity may accept an arbitrary time scale, and there's nothing we, as translators, can do to infer the expected one.
 
 ## Augmented Grammar
 
-The grammar may be adapted to use only one production as the
-start. Here it have been included:
+The grammar may be adapted to use only one production as the start. Here it have been included:
 
 ```
 FILE -> AUTOMATION'
@@ -84,32 +52,41 @@ This three rules together allow the user to have an empty file.
 
 ## Problems
 
-- Right before sending, some code broke mathematical expressions
-and it would take too long to fix. This is sad because it was
-working like a charm.
+- Right before sending, some code broke mathematical expressions and it would take too long to fix. This is sad because it was working like a charm.
 
-- If there's some entity inside home assistant that uses any
-keyword as `Id`, the keyword will be ignored by the parser, thus
-breaking most of the file.
+- If there's some entity inside home assistant that uses any keyword as `Id`, the keyword will be ignored by the parser, thus breaking most of the file.
 
-- Because there's no specific control in which state it should
-sync or fail, file parsing should work most of the time, but
-without an external agent actively taking warnings down the user
-won't notice anything (expected behavior).
+- Because there's no specific control in which state it should sync or fail, file parsing should work most of the time, but without an external agent actively taking warnings down the user won't notice anything (expected behavior).
 
-- The problem above also reinforces that this application is
-somewhat bad and malformed.
+- The problem above also reinforces that this application is somewhat bad and malformed.
 
-- The grammar is "defined" in two distinct places: first in the
-parser; and later (hardcoded) on yaml generator. This makes the
-parser generator insignificant, to say the least.
+- The grammar is "defined" in two distinct places: first in the parser; and later (hardcoded) on yaml generator. This makes the parser generator insignificant, to say the least.
 
-- It's really hard to predict the program behavior when working
-with sets, as I've encountered problems regarding hashing order
-in two languages because of bad API design.
+- It's really hard to predict the program behavior when working with sets, as I've encountered problems regarding hashing order in two languages because of bad API design.
 
-- When refactoring the codebase, the original boolean acryonms
-were lost in the way and I remembered of them too late.
+- When refactoring the codebase, the original boolean acryonms were lost in the way and I remembered of them too late.
+
+## Project Structure
+
+The project have four different decoupled systems working together:
+
+1. Lexer
+
+Responsible to converting the source (user input) into more abstract _tokens_; which store the type (if it is a terminal), the symbol (even if it is the same as the type) and the position on the source.
+
+The lexer never throw errors, only return a list of tokens.
+
+2. Parser
+
+One step behind the tree builder, the parser only checks if the tokens are part of some grammar. It is a SLR(1) parser that return all errors found in a list. The input is valid if there's no errors on the returned list.
+
+3. Tree Builder
+
+It's a "level two parser", that builds the AST **while parsing** the user input. It behaves exactly the same as the regular one, but, this time, returning not only the potential errors but also a tree for those tokens.
+
+4. Synthesizer
+
+This component takes the AST as input to generate a YAML file based on it.
 
 # Tokens (RegEx)
 
