@@ -276,7 +276,7 @@ EXPR³ -> Num
 | 77 |            | R46 | R46 | R46 | R46  | R46 | R46 | R46 | R46 | R46 |     |     |     | R46  | R46   | R46 | R46 | R46 | R46 | R46 | R46 | R46 | R46 | R46 |     |
 | 78 |            |     |     | R12 | R12  | R12 | R12 | R12 |     | R12 |     |     |     |      |       |     |     |     |     |     |     |     |     |     |     |
 
-![states](states.png)
+![states](states_small.png)
 
 |             | AUTOMATION' | AUTOMATION | AUTOMATIONS | RULE | RULES | CONDITION | CHAIN | NEGATION | PROPERTY | PROPERTIES | VALUE | VALUES | LIST | DICT | EXPR | EXPR¹ | EXPR² | EXPR³ |
 |:-----------:|:-----------:|:----------:|:-----------:|:----:|:-----:|:---------:|:-----:|:--------:|:--------:|:----------:|:-----:|:------:|:----:|:----:|:----:|:-----:|:-----:|:-----:|
@@ -360,4 +360,4 @@ EXPR³ -> Num
 | 77          |             |            |             |      |       |           |       |          |          |            |       |        |      |      |      |       |       |       |
 | 78          |             |            |             |      |       |           |       |          |          |            |       |        |      |      |      |       |       |       |
 
-![gotos](gotos.png)
+![gotos](gotos_small.png)
