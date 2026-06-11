@@ -11,7 +11,7 @@ def _val(node: Any) -> Any:
         case BoolValue(value=v):    return v
         case IdValue(name=n):       return n
         case StrValue(raw=r):       return r.strip('"')
-        case NumLiteral(raw=r):     return float(r) if '.' in r else int(r)
+        case NumLiteral(raw=r):     return float(r) if '.' in r else int(r, 0)
         case ListValue(items=its):  return [_val(i) for i in its]
         case Dict(props=[]):        return {}
         case Dict(props=ps):        return {p.name: _val(p.value) for p in ps}
