@@ -15,8 +15,8 @@ def _val(node: Any) -> Any:
         case ListValue(items=its):  return [_val(i) for i in its]
         case Dict(props=[]):        return {}
         case Dict(props=ps):        return {p.name: _val(p.value) for p in ps}
-        case BinOp(op=op, left=l, right=r): return f"{_val(l)} {op} {_val(r)}"
-        case UnaryOp(op=op, operand=o):     return f"{op}{_val(o)}"
+        case BinOp(op=op, left=l, right=r): return eval(f"{_val(l)} {op} {_val(r)}")
+        case UnaryOp(op=op, operand=o):     return eval(f"{op}{_val(o)}")
         case _:                     return str(node)
 
 

@@ -309,6 +309,28 @@ class SLRParser:
         i = 0
         while True:
             state = int(stack[-1])
+
+            # hack fix
+            if i >= len(tokens):
+                # we got past EOF wtf
+                errors.append(ParseError(
+                    token=Token(EOF, EOF),
+                    message=f"unexpected EOF"
+                ))
+
+                if '}' in [s for (st, s) in self.actions if st == state]:
+                    errors.append(ParseError(
+                        token=Token(EOF, EOF),
+                        message=f"unclosed {{"
+                    ))
+
+                    tokens.append(Token('}', '}'))
+                    tokens.append(Token(EOF, EOF))
+
+                    continue
+
+                return errors
+
             token = tokens[i]
 
             action = self.actions.get((state, token.type))

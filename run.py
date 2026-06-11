@@ -2,8 +2,9 @@ import tree, gen, readline
 from lexer import Lexer
 from parser import Grammar, GRAMMAR, SLRParser
 from tree import parse_source, pretty
+import sys
 
-s = input("> ")
+s = sys.stdin.read()
 
 lexer = Lexer({ sym for sym in 'automation { } when if do ( ) and or not true false [ ] + - * / % **'.split(' ') })
 tokens = lexer.tokenize(s)

@@ -268,17 +268,17 @@ class ASTParser(SLRParser):
             case "EXPR" if len(syms) == 3:           return BinOp(op=tv(1), left=ch[0], right=ch[2])
             case "EXPR":                             return ch[0]
 
-            case "EXPR1" if len(syms) == 3:          return BinOp(op=tv(1), left=ch[0], right=ch[2])
-            case "EXPR1":                            return ch[0]
+            case "EXPR¹" if len(syms) == 3:          return BinOp(op=tv(1), left=ch[0], right=ch[2])
+            case "EXPR¹":                            return ch[0]
 
-            case "EXPR2" if len(syms) == 3:          return BinOp(op="**",  left=ch[0], right=ch[2])
-            case "EXPR2":                            return ch[0]
+            case "EXPR²" if len(syms) == 3:          return BinOp(op="**",  left=ch[0], right=ch[2])
+            case "EXPR²":                            return ch[0]
 
-            case "EXPR3" if syms in [["+","EXPR3"],["-","EXPR3"]]:
+            case "EXPR³" if syms in [["+","EXPR3"],["-","EXPR3"]]:
                 return UnaryOp(op=tv(0), operand=ch[1])
 
-            case "EXPR3" if syms == ["(","EXPR",")"]:  return ch[1]
-            case "EXPR3":                              return NumLiteral(raw=tv(0))
+            case "EXPR³" if syms == ["(","EXPR",")"]:  return ch[1]
+            case "EXPR³":                              return NumLiteral(raw=tv(0))
 
             case _:
                 return ch[0] if len(ch) == 1 else ch
@@ -361,7 +361,8 @@ def pretty(node: Any, depth: int = 0) -> str:
             return f"{pad}(empty)"
 
         case _:
-            return f"{pad}{node!r}"
+            print(node)
+            return f"{pad}unknown :: {node!r}"
 
 def parse_source(source: str) -> AutomationFile:
     from lexer import Lexer
