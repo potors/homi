@@ -94,6 +94,20 @@ class Lexer:
             tokens.append(token)
             text = text[len(token.value):]
 
+        extra_kws = {
+            "on": "true",
+            "off": "false",
+            "yes": "true",
+            "no": "false",
+        }
+
+        for token in tokens:
+            for kw in extra_kws:
+                if token.value == kw:
+                    print(f"replaced { token } by { extra_kws[kw] }")
+                    token.type = extra_kws[kw]
+                    token.value = extra_kws[kw]
+
         tokens.append(Token(EOF, EOF))
         return tokens
 

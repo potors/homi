@@ -60,7 +60,7 @@ def condition_to_yaml(node: Any) -> dict | list:
         case ChainedCondition(_, op=op):
             # flatten consecutive same-op chains into a list
             items = _flatten_chain(node)
-            return {"condition": op, "conditions": items}
+            return {op: items}
 
         case ParenCondition(inner=inner, chain=chain):
             if chain is None:
@@ -99,7 +99,7 @@ def _collect(node: Any, out: list):
             result = leaf
 
             for _ in range(not_count):
-                result = {"condition": "not", "conditions": [result]}
+                result = {"not": [result]}
 
             out.append(result)
 
