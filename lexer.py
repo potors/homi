@@ -23,7 +23,7 @@ class Lexer:
     def token(self, text: str) -> Token | None:
         match = lambda x: (re.search(x, text) or [None])[0]
 
-        if symbol := match(r'^".*"'):
+        if symbol := match(r'^".*?(?<!\\)"'):
             return Token("Str", symbol)
 
         if symbol := match(r'^0[xob][0-9a-fA-F]+'):
