@@ -53,7 +53,7 @@ def condition_to_yaml(node: Any) -> dict | list:
             result = leaf
 
             for _ in range(not_count):
-                result = {"condition": "not", "conditions": [result]}
+                result = {"not": [result]}
 
             return result
 
