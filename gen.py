@@ -125,7 +125,12 @@ def _automation_to_yaml(auto: Automation, indent: int = 0) -> str:
             case DoRule(action=act, args=Dict(props=ps)):
                 entry = {"action": act}
                 entry.update({p.name: _val(p.value) for p in ps})
-                actions.append(entry)
+
+                if act == 'if':
+                    entry.pop("action")
+                    actions.append({ "if": entry })
+                else:
+                    actions.append(entry)
 
             case Property(name=n, value=v) | PropertyRule(name=n, value=v):
                 top_props[n] = _val(v)
