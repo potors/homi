@@ -3,29 +3,13 @@ from tree import (
     NegatedCondition, ChainedCondition, ParenCondition,
     CallNegation, NotNegation,
 )
+from gen import _val
 
 def _leaf(call: CallNegation) -> dict:
     entry = {"condition": call.name}
-    entry.update({p.name: _val_simple(p.value) for p in call.args.props})
+    entry.update({p.name: _val(p.value) for p in call.args.props})
 
     return entry
-
-
-def _val_simple(node: Any) -> Any:
-    from tree import BoolValue, IdValue, StrValue, NumLiteral, ListValue, Dict, BinOp, UnaryOp
-
-    match node:
-        case BoolValue(value=v):   return v
-        case IdValue(name=n):      return n
-        case StrValue(raw=r):      return r.strip('"')
-        case NumLiteral(raw=r):    return float(r) if '.' in r else int(r, 0)
-        case ListValue(items=its): return [_val_simple(i) for i in its]
-        case Dict(props=[]):       return {}
-        case Dict(props=ps):       return {p.name: _val_simple(p.value) for p in ps}
-        case BinOp(op=op, left=l, right=r): return f"{_val_simple(l)} {op} {_val_simple(r)}"
-        case UnaryOp(op=op, operand=o):     return f"{op}{_val_simple(o)}"
-        case _:                    return str(node)
-
 
 def _unwrap_negation(neg):
     count = 0

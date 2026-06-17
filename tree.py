@@ -274,7 +274,7 @@ class ASTParser(SLRParser):
             case "EXPR²" if len(syms) == 3:          return BinOp(op="**",  left=ch[0], right=ch[2])
             case "EXPR²":                            return ch[0]
 
-            case "EXPR³" if syms in [["+","EXPR3"],["-","EXPR3"]]:
+            case "EXPR³" if syms in [["+","EXPR³"],["-","EXPR³"]]:
                 return UnaryOp(op=tv(0), operand=ch[1])
 
             case "EXPR³" if syms == ["(","EXPR",")"]:  return ch[1]
